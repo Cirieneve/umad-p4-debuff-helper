@@ -18,6 +18,8 @@ public sealed class Configuration : IPluginConfiguration
 
     public bool HelperCollapsed { get; set; }
 
+    public bool BlackHoleHelperEnabled { get; set; }
+
     public BlackHoleStrategyKind SelectedBlackHoleStrategy { get; set; } = BlackHoleStrategyKind.Standard;
 
     public float HelperFontScale { get; set; } = 1.0f;

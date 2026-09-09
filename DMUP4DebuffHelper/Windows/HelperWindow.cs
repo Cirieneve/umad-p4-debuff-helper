@@ -136,6 +136,10 @@ public sealed class HelperWindow : Window, IDisposable
         P3LimitCutState limitCutState,
         bool isPreview)
     {
+        if (!plugin.Configuration.BlackHoleHelperEnabled) {
+            return;
+        }
+
         var instructionCount = P3.BlackHoleStrategy.GetInstructionsFor(assignment, plugin.Configuration.SelectedBlackHoleStrategy).Count;
         var titleBase = limitCutState.IsActive && (assignment is null || !assignment.HasLine)
             ? "P3 Limit Cut"
@@ -664,8 +668,14 @@ public sealed class HelperWindow : Window, IDisposable
             (P4Flood.WhiteWound2StatusId, RealityState.Unknown, 0, 6.8f, "Preview Player", 0, WoundColor.White),
             (P4Flood.AllaganFieldStatusId, RealityState.Real, 1122, 7.4f, "Preview Player", 0, WoundColor.White),
             (5545, RealityState.Real, 1120, 10.4f, "Preview Player", 0, WoundColor.None),
+            (5545, RealityState.Fake, 1120, 10.4f, "Preview Player", 0, WoundColor.None),
+            (5544, RealityState.Real, 1119, 12.0f, "Preview Player", 0, WoundColor.None),
             (5544, RealityState.Fake, 1119, 12.0f, "Preview Player", 0, WoundColor.None),
+            (5546, RealityState.Real, 1119, 12.0f, "Preview Player", 0, WoundColor.None),
+            (5546, RealityState.Fake, 1119, 12.0f, "Preview Player", 0, WoundColor.None),
             (5548, RealityState.Real, 1122, 18.0f, "Preview Player", 0, WoundColor.None),
+            (5548, RealityState.Fake, 1122, 18.0f, "Preview Player", 0, WoundColor.None),
+            (5547, RealityState.Real, 1121, 23.2f, "Preview Player", 0, WoundColor.None),
             (5547, RealityState.Fake, 1121, 23.2f, "Preview Player", 0, WoundColor.None),
         };
 
@@ -986,6 +996,12 @@ public sealed class HelperWindow : Window, IDisposable
         for (var index = 0; index < assignments.Count; index++)
         {
             var assignment = assignments[index];
+
+            //Remove to see wound colours
+            if (assignment.WoundColor != WoundColor.None && assignment.FloodSide == FloodSide.None) {
+                continue;
+            }
+
             var itemWidth = GetAssignmentWidth(assignment);
             if (rowWidth > 0.0f && rowWidth + spacing + itemWidth > availableWidth)
             {
@@ -1011,15 +1027,18 @@ public sealed class HelperWindow : Window, IDisposable
         var labelSize = ImGui.CalcTextSize(label);
         var timerSize = ImGui.CalcTextSize(timerText);
         var start = ImGui.GetCursorPos();
-        var labelColor = GetAssignmentLabelColor(assignment);
-        var borderColor = assignment.FloodSide != FloodSide.None
-            ? GetFloodSideColor(assignment.FloodSide)
-            : assignment.Reality == RealityState.Fake
-                ? FakeColor
-                : assignment.Reality == RealityState.Real
-                    ? GoldColor
-                    : UnknownColor;
+        var labelColor = GetAssignmentLabelColor(assignment); //Improve colours
+        var borderColor = GetAssignmentLabelColor(assignment);  //maybe useful but distracting
 
+        /*
+        assignment.FloodSide != FloodSide.None 
+        ? GetFloodSideColor(assignment.FloodSide)
+        : assignment.Reality == RealityState.Fake
+            ? FakeColor
+            : assignment.Reality == RealityState.Real
+                ? GoldColor
+                : UnknownColor;
+        */
         ImGui.BeginGroup();
         ImGui.SetCursorPosX(start.X + MathF.Max(0.0f, (width - labelSize.X) * 0.5f));
         ImGui.TextColored(labelColor, label);
@@ -1037,6 +1056,18 @@ public sealed class HelperWindow : Window, IDisposable
 
     private static void DrawStatusIconWithBorder(uint iconId, float iconSize, Vector4 borderColor, string tooltip)
     {
+        uint drawIconId = iconId;
+        uint[] replaceableIconIds = [P4Flood.AllaganFieldStatusId, P4Flood.BeyondDeath1StatusId, P4Flood.BeyondDeath2StatusId];
+
+        if (replaceableIconIds.Contains(iconId)) {
+            if (borderColor == RealColor) {
+                drawIconId = P4Flood.BlackWound2StatusId;
+            } else
+            {
+                drawIconId = P4Flood.WhiteWound2StatusId;
+            }
+        }
+
         var size = new Vector2(iconSize, iconSize);
         var start = ImGui.GetCursorScreenPos();
         if (iconId == 0)
@@ -1047,7 +1078,7 @@ public sealed class HelperWindow : Window, IDisposable
         {
             try
             {
-                var texture = Plugin.TextureProvider.GetFromGameIcon(new GameIconLookup(iconId));
+                var texture = Plugin.TextureProvider.GetFromGameIcon(new GameIconLookup(drawIconId));
                 var wrap = texture.GetWrapOrDefault();
                 if (wrap is null)
                 {
@@ -1190,8 +1221,8 @@ public sealed class HelperWindow : Window, IDisposable
 
         return assignment.Reality switch
         {
-            RealityState.Real => $"Real: {GetResolutionLabel(assignment)}",
-            RealityState.Fake => $"Fake: {GetResolutionLabel(assignment)}",
+            RealityState.Real => $"{GetResolutionLabel(assignment)}",
+            RealityState.Fake => $"{GetResolutionLabel(assignment)}",
             _ => "Unknown",
         };
     }
@@ -1200,12 +1231,12 @@ public sealed class HelperWindow : Window, IDisposable
     {
         return assignment.Rule.Id switch
         {
-            5545 => assignment.Reality == RealityState.Real ? "Stack" : "Spread",
-            5544 => assignment.Reality == RealityState.Real ? "Spread" : "Stack",
+            5545 => assignment.Reality == RealityState.Real ? "Stack C" : "Spread B",
+            5544 => assignment.Reality == RealityState.Real ? "Spread B" : "Stack C",
             5543 => assignment.Reality == RealityState.Real ? "Look away" : "Look toward",
-            5546 => assignment.Reality == RealityState.Real ? "Stop" : "Move",
-            5548 => assignment.Reality == RealityState.Real ? "Donut" : "Point-blank",
-            5547 => assignment.Reality == RealityState.Real ? "Point-blank" : "Donut",
+            5546 => assignment.Reality == RealityState.Real ? "Stillness" : "Motion",
+            5548 => assignment.Reality == RealityState.Real ? "Donut" : "Twister",
+            5547 => assignment.Reality == RealityState.Real ? "Twister" : "Donut",
             _ => FormatReality(assignment.Reality),
         };
     }
@@ -1260,6 +1291,11 @@ public sealed class HelperWindow : Window, IDisposable
 
     private static Vector4 GetAssignmentLabelColor(P4DebuffAssignment assignment)
     {
+        if (assignment.FloodSide == FloodSide.None) {
+            return GetResolutionColour(assignment);
+        }
+
+
         if (assignment.FloodSide != FloodSide.None)
         {
             return GetFloodSideColor(assignment.FloodSide);
@@ -1276,6 +1312,27 @@ public sealed class HelperWindow : Window, IDisposable
             ? GetFloodSideColor(woundSide)
             : GetRealityColor(assignment.Reality);
     }
+
+    private static Vector4 GetResolutionColour(P4DebuffAssignment assignment)
+    {
+
+
+        Vector4 blue = new(0.25f, 0.85f, 1.0f, 1.0f);
+        Vector4 red = new(1.0f, 0.28f, 0.22f, 1.0f);
+        Vector4 yellow = new(1.0f, 0.78f, 0.18f, 1.0f);
+
+        return assignment.Rule.Id switch
+        {
+            5545 => assignment.Reality == RealityState.Real ? blue : yellow,
+            5544 => assignment.Reality == RealityState.Real ? yellow : blue,
+            5543 => assignment.Reality == RealityState.Real ? RealColor : FakeColor,
+            5546 => assignment.Reality == RealityState.Real ? red : blue,
+            5548 => assignment.Reality == RealityState.Real ? blue : red,
+            5547 => assignment.Reality == RealityState.Real ? red : blue,
+            _ => UnknownColor
+        };
+    }
+
 
     private static Vector4 GetFloodSideColor(FloodSide side)
     {

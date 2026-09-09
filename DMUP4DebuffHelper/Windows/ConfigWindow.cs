@@ -109,6 +109,14 @@ public sealed class ConfigWindow : Window, IDisposable
 
     private void DrawStrategySetting()
     {
+        //Setting for disabling p3
+
+        var blackHoleHelperEnabled = configuration.BlackHoleHelperEnabled;
+        if (ImGui.Checkbox("Enable Black Hole helper", ref blackHoleHelperEnabled))
+        {
+            plugin.SetBlackHoleHelperEnabled(blackHoleHelperEnabled);
+        }
+
         var selectedOption = P3.BlackHoleStrategy.GetOption(configuration.SelectedBlackHoleStrategy);
 
         ImGui.SetNextItemWidth(180.0f);

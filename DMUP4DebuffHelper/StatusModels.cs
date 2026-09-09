@@ -180,8 +180,8 @@ internal static class P4Flood
     {
         return woundColor switch
         {
-            WoundColor.Black => "Black",
-            WoundColor.White => "White",
+            WoundColor.Black => "Blue",
+            WoundColor.White => "Purple",
             _ => "Unknown",
         };
     }

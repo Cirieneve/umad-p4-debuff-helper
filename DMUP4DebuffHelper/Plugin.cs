@@ -300,6 +300,13 @@ public sealed class Plugin : IDalamudPlugin
         SaveConfiguration();
     }
 
+    public void SetBlackHoleHelperEnabled(bool enabled)
+    {
+        Configuration.BlackHoleHelperEnabled = enabled;
+        RefreshHelperWindowVisibility();
+        SaveConfiguration();
+    }
+
     public void SetSelectedBlackHoleStrategy(DMUP3BlackholeHelper.BlackHoleStrategyKind strategy)
     {
         Configuration.SelectedBlackHoleStrategy = DMUP3BlackholeHelper.BlackHoleStrategy.Normalize(strategy);
